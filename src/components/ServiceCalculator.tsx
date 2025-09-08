@@ -163,6 +163,12 @@ const ServiceCalculator: React.FC = () => {
   const totals = calculateTotals();
 
   const generateInvoice = async () => {
+    // Check if user is logged in first
+    if (!isLoggedIn) {
+      alert('Você precisa estar logado para gerar notas fiscais.');
+      return;
+    }
+
     if (!calculator.clientId || !calculator.mechanicName) {
       alert('Preencha o ID do cliente e nome do mecânico');
       return;
