@@ -22,8 +22,8 @@ const Home: React.FC = () => {
     },
     {
       icon: <Clock className="h-8 w-8" />,
-      title: 'Atendimento 24h',
-      description: 'Estamos sempre prontos para te atender quando precisar.',
+      title: 'Atendimento das 8hrs às 22hrs',
+      description: 'Horário de funcionamento todos os dias das 8h às 22h.',
     },
   ];
 
