@@ -320,6 +320,109 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleDeleteInvoice = async (invoiceId: string, invoiceNumber: number) => {
+    // Verificar se o usuário é ADMEC
+    if (username !== 'ADMEC') {
+      alert('Apenas o administrador ADMEC pode excluir notas fiscais.');
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir a nota fiscal MGU-${invoiceNumber}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceId);
+      
+      if (error) throw error;
+      
+      await fetchInvoices();
+      alert('Nota fiscal excluída com sucesso!');
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      alert('Erro ao excluir nota fiscal. Tente novamente.');
+    }
+  };
+
+  const handleDeleteCarRequest = async (requestId: string, customerName: string) => {
+    // Verificar se o usuário é ADMEC
+    if (username !== 'ADMEC') {
+      alert('Apenas o administrador ADMEC pode excluir solicitações de compra.');
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja excluir a solicitação de compra de ${customerName}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('car_resale_requests')
+        .delete()
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      
+      await fetchCarRequests();
+      alert('Solicitação de compra excluída com sucesso!');
+    } catch (error) {
+      console.error('Error deleting car request:', error);
+      alert('Erro ao excluir solicitação de compra. Tente novamente.');
+    }
+  };
+
+  const handleClearAllNotifications = async () => {
+    // Verificar se o usuário é ADMEC
+    if (username !== 'ADMEC') {
+      alert('Apenas o administrador ADMEC pode limpar todas as notificações.');
+      return;
+    }
+
+    if (!confirm('Tem certeza que deseja limpar todas as notificações? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all notifications
+      
+      if (error) throw error;
+      
+      await refetchNotifications();
+      alert('Todas as notificações foram limpas com sucesso!');
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      alert('Erro ao limpar notificações. Tente novamente.');
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId: string) => {
+    // Verificar se o usuário é ADMEC
+    if (username !== 'ADMEC') {
+      alert('Apenas o administrador ADMEC pode excluir notificações.');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+      
+      if (error) throw error;
+      
+      await refetchNotifications();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      alert('Erro ao excluir notificação. Tente novamente.');
+    }
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -701,6 +804,17 @@ const AdminDashboard: React.FC = () => {
                           </button>
                         </div>
                       )}
+                      
+                      {username === 'ADMEC' && (
+                        <button
+                          onClick={() => handleDeleteCarRequest(request.id, request.customer_name)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs flex items-center space-x-1 ml-2"
+                          title="Apenas ADMEC pode excluir solicitações"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Excluir</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -772,6 +886,17 @@ const AdminDashboard: React.FC = () => {
                       <Eye className="h-4 w-4" />
                       <span>Ver</span>
                     </button>
+                    
+                    {username === 'ADMEC' && (
+                      <button
+                        onClick={() => handleDeleteInvoice(invoice.id, invoice.invoice_number)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm flex items-center space-x-1 ml-2"
+                        title="Apenas ADMEC pode excluir notas fiscais"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Excluir</span>
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -782,7 +907,19 @@ const AdminDashboard: React.FC = () => {
         {/* Notifications Tab */}
         {activeTab === 'notifications' && userRole === 'admin' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Notificações</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-white">Notificações</h2>
+              {username === 'ADMEC' && notifications.length > 0 && (
+                <button
+                  onClick={handleClearAllNotifications}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                  title="Apenas ADMEC pode limpar todas as notificações"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Limpar Todas</span>
+                </button>
+              )}
+            </div>
             
             <div className="space-y-4">
               {notifications.map((notification) => (
@@ -806,17 +943,41 @@ const AdminDashboard: React.FC = () => {
                       </p>
                     </div>
                     
-                    {!notification.is_read && (
-                      <button
-                        onClick={() => markNotificationAsRead(notification.id)}
-                        className="text-yellow-400 hover:text-yellow-300 text-sm"
-                      >
-                        Marcar como lida
-                      </button>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {!notification.is_read && (
+                        <button
+                          onClick={() => markNotificationAsRead(notification.id)}
+                          className="text-yellow-400 hover:text-yellow-300 text-sm"
+                        >
+                          Marcar como lida
+                        </button>
+                      )}
+                      
+                      {username === 'ADMEC' && (
+                        <button
+                          onClick={() => handleDeleteNotification(notification.id)}
+                          className="text-red-400 hover:text-red-300 p-1"
+                          title="Apenas ADMEC pode excluir notificações"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}
+              
+              {notifications.length === 0 && (
+                <div className="text-center py-12">
+                  <Bell className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-xl font-bold text-gray-400 mb-2">
+                    Nenhuma notificação
+                  </h3>
+                  <p className="text-gray-500">
+                    Todas as notificações aparecerão aqui
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
