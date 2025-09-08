@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Minus, Trash2, Calculator, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useServices } from '../hooks/useSupabase';
 import { supabase, isAnyUserLoggedIn, getCurrentUsername } from '../lib/supabase';
 import type { Service, ServiceOrderItem } from '../types';
