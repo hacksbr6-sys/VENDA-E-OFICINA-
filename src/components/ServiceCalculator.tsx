@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Minus, Trash2, Calculator, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { useServices } from '../hooks/useSupabase';
 import { supabase, isAnyUserLoggedIn, getCurrentUsername } from '../lib/supabase';
 import type { Service, ServiceOrderItem } from '../types';
@@ -33,7 +33,7 @@ const ServiceCalculator: React.FC = () => {
     selectedServices: [],
     extraPartsValue: 0,
     clientType: 'cliente',
-    partsTaxPercent: 0,
+    partsTaxPercent: 30,
     discountValue: 0,
     discountPercent: 0,
     clientId: '',
@@ -163,19 +163,22 @@ const ServiceCalculator: React.FC = () => {
   const totals = calculateTotals();
 
   const generateInvoice = async () => {
-    // Check if user is logged in first
-    if (!isLoggedIn) {
-      alert('Você precisa estar logado para gerar notas fiscais.');
-      return;
-    }
-
     if (!calculator.clientId || !calculator.mechanicName) {
       alert('Preencha o ID do cliente e nome do mecânico');
       return;
     }
 
     if (calculator.selectedServices.length === 0) {
-      alert('Adicione pelo menos um serviço');
+      // Allow invoice generation with only parts if parts value > 0
+      if (calculator.extraPartsValue === 0) {
+        alert('Adicione pelo menos um serviço ou valor de peças extras');
+        return;
+      }
+    }
+
+    // Validate that there's something to invoice
+    if (calculator.selectedServices.length === 0 && calculator.extraPartsValue === 0) {
+      alert('Adicione pelo menos um serviço ou valor de peças extras');
       return;
     }
 
@@ -423,7 +426,10 @@ const ServiceCalculator: React.FC = () => {
             <input
               type="number"
               value={calculator.extraPartsValue || 0}
-              onChange={(e) => setCalculator(prev => ({ ...prev, extraPartsValue: Number(e.target.value) || 0 }))}
+              onChange={(e) => {
+                const value = Number(e.target.value) || 0;
+                setCalculator(prev => ({ ...prev, extraPartsValue: value }));
+              }}
               className="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-red-600 focus:outline-none"
               placeholder="0"
             />
@@ -440,7 +446,7 @@ const ServiceCalculator: React.FC = () => {
                 
                 setCalculator(prev => ({ 
                   ...prev, 
-                  clientType,
+                  clientType: clientType as 'cliente' | 'policial' | 'samu',
                   partsTaxPercent: taxPercent 
                 }));
               }}
@@ -512,16 +518,16 @@ const ServiceCalculator: React.FC = () => {
 
         <button
           onClick={generateInvoice}
-          disabled={!calculator.clientId || !calculator.mechanicName || calculator.selectedServices.length === 0}
+          disabled={!calculator.clientId || !calculator.mechanicName || (calculator.selectedServices.length === 0 && calculator.extraPartsValue === 0)}
           className={`w-full mt-6 ${
-            (!calculator.clientId || !calculator.mechanicName || calculator.selectedServices.length === 0)
+            (!calculator.clientId || !calculator.mechanicName || (calculator.selectedServices.length === 0 && calculator.extraPartsValue === 0))
               ? 'bg-gray-600 cursor-not-allowed' 
               : 'bg-red-600 hover:bg-red-700'
           } text-white py-4 rounded-lg font-bold transition-colors flex items-center justify-center`}
         >
           <FileText className="h-5 w-5 mr-2" />
           {!isLoggedIn ? 'Faça Login para Gerar Nota Fiscal' : 
-           (!calculator.clientId || !calculator.mechanicName || calculator.selectedServices.length === 0) ? 
+           (!calculator.clientId || !calculator.mechanicName || (calculator.selectedServices.length === 0 && calculator.extraPartsValue === 0)) ? 
            'Preencha os Dados para Gerar Nota Fiscal' : 'Gerar Nota Fiscal'}
         </button>
         
